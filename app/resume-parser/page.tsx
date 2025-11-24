@@ -4,12 +4,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import FileUpload from './resume-parser/components/FileUpload';
-import ResumeForm, { ResumeData } from './resume-parser/components/ResumeForm';
-import ResumeList from './resume-parser/components/ResumeList';
-import LoadingSpinner from './resume-parser/components/LoadingSpinner';
+import FileUpload from './components/FileUpload';
+import ResumeForm, { ResumeData } from './components/ResumeForm';
+import ResumeList from './components/ResumeList';
+import LoadingSpinner from './components/LoadingSpinner';
 
-export default function Home() {
+export default function ResumeParserPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
   const [currentResume, setCurrentResume] = useState<ResumeData | null>(null);

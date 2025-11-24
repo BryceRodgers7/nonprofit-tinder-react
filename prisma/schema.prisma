@@ -1,0 +1,39 @@
+// BACKEND: Prisma schema for Supabase PostgreSQL database
+// This defines the Resume model for storing parsed resume data
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+}
+        
+
+model Resume {
+  id               String   @id @default(uuid())
+  fileName         String
+  fileType         String
+  
+  // Personal Information
+  fullName         String?
+  email            String?
+  phone            String?
+  
+  // Work Experience
+  lastJob          String?
+  lastCompany      String?
+  yearsExperience  String?
+  
+  // Skills and Education
+  technicalSkills  String[] @default([])
+  education        String?
+  summary          String?
+  
+  // Timestamps
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  
+  @@map("resumes")
+}
