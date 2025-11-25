@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { prisma } from '@/lib/prisma';
 import { ensureDatabaseTables } from '@/lib/db-init'; // TEMPORARY: Remove this line later
+import { GEOGRAPHIC_FOCUS_OPTIONS, LEGAL_DESIGNATION_OPTIONS, POPULATIONS, PRIMARY_CAUSE_AREAS } from '@/lib/profile-constants';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -38,19 +39,22 @@ export async function POST(request: NextRequest) {
       messages: [
         {
           role: 'system',
-          content: `You are a resume parser. Extract the following information from the resume text and return it as JSON:
-- fullName: The person's full name
-- email: Email address
-- phone: Phone number
-- lastJob: Most recent job title
-- lastCompany: Most recent company name
-- yearsExperience: Total years of professional experience (as a string, e.g., "5", "3-5", etc.)
-- technicalSkills: Array of technical skills (programming languages, frameworks, tools, etc.)
-- education: Education summary (degrees, schools, years)
-- summary: Professional summary or objective (2-3 sentences)
+          content: `You are an information extraction engine.
+    Given a proposal or organizational document as raw text, extract the following fields:
+    - full_organization_name
+    - legal_designation: This should be a single string. Select one legal designation from this exact list: ${LEGAL_DESIGNATION_OPTIONS.join(', ')}. Match the text as closely as possible to one of these options. Common variations: "501c3" or "501(c)3" should map to "501(c)(3) – Public Charity" or "501(c)(3) – Private Foundation" based on context. "501c4" should map to "501(c)(4) – Social Welfare Organization", etc.
+    - mission_statement
+    - ein
+    - year_founded
+    - location_served
+    - biggest_accomplishment
+    - what_we_do_in_one_sentence
+    - primary_cause_areas: This should be a JSON array of strings. Select one or more cause areas from this exact list: ${PRIMARY_CAUSE_AREAS.join(', ')}. Match the text as closely as possible to one of these options. If none match exactly, use "Other".
+    - populations: This should be a JSON array of strings. Select one or more populations from this exact list: ${POPULATIONS.join(', ')}. Match the text as closely as possible to one of these options. If none match exactly, use "Other".
+    - geographic_focus: This should be a single string. Select one geographic focus from this exact list: ${GEOGRAPHIC_FOCUS_OPTIONS.join(', ')}. Match the text as closely as possible to one of these options.
 
-If any field is not found, set it to null (except technicalSkills which should be an empty array).
-Return ONLY valid JSON, no additional text.`
+    Return ONLY a JSON object with these keys.
+    If some value is missing, use an empty string for text fields or an empty array [] for primary_cause_areas and populations.`
         },
         {
           role: 'user',
@@ -74,26 +78,9 @@ Return ONLY valid JSON, no additional text.`
 
     const extractedData = JSON.parse(responseContent);
 
-    // Save to database via Prisma
-    const resume = await prisma.resume.create({
-      data: {
-        fileName: fileName || 'unknown',
-        fileType: fileType || 'unknown',
-        fullName: extractedData.fullName || null,
-        email: extractedData.email || null,
-        phone: extractedData.phone || null,
-        lastJob: extractedData.lastJob || null,
-        lastCompany: extractedData.lastCompany || null,
-        yearsExperience: extractedData.yearsExperience || null,
-        technicalSkills: extractedData.technicalSkills || [],
-        education: extractedData.education || null,
-        summary: extractedData.summary || null,
-      },
-    });
-
     return NextResponse.json({
       success: true,
-      resume: resume,
+      extractedData: extractedData,
     });
 
   } catch (error) {
