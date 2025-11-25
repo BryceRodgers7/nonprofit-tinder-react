@@ -1,5 +1,5 @@
 // BACKEND: Prisma schema for Supabase PostgreSQL database
-// This defines the Resume model for storing parsed resume data
+// This defines models for non-profit organization profiles with user authentication
 
 generator client {
   provider = "prisma-client-js"
@@ -9,31 +9,48 @@ datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
 }
-        
 
-model Resume {
-  id               String   @id @default(uuid())
-  fileName         String
-  fileType         String
+model AppUser {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String   // Hashed with bcrypt
+  name      String
   
-  // Personal Information
-  fullName         String?
-  email            String?
-  phone            String?
+  // One-to-one relationship with Profile
+  profile   Profile?
   
-  // Work Experience
-  lastJob          String?
-  lastCompany      String?
-  yearsExperience  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
   
-  // Skills and Education
-  technicalSkills  String[] @default([])
-  education        String?
-  summary          String?
+  @@map("app_users")
+}
+
+model Profile {
+  id      String  @id @default(uuid())
+  userId  String  @unique
+  user    AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // File information (optional - for uploaded proposals)
+  fileName  String?
+  s3Key     String?
+  s3Url     String?
+  
+  // Non-profit organization information
+  organizationName      String?
+  ein                   String?
+  missionStatement      String?
+  yearFounded           String?
+  locationServed        String?
+  biggestAccomplishment String?
+  oneSentenceSummary    String?
+  legalDesignation      String?
+  primaryCauseAreas     String[] @default([])
+  populations           String[] @default([])
+  geographicalFocus     String?
   
   // Timestamps
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
   
-  @@map("resumes")
+  @@map("profiles")
 }

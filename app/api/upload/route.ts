@@ -1,8 +1,9 @@
 // BACKEND: File upload API route
-// Handles file upload and text extraction from PDF, DOCX, and TXT files
+// Handles file upload, text extraction, and S3 storage for proposal documents
 
 import { NextRequest, NextResponse } from 'next/server';
 import mammoth from 'mammoth';
+import { uploadFileToS3, validateS3Config } from '@/lib/s3';
 
 // Simple PDF parsing function using the stable pdf-parse library (v1.1.1)
 async function parsePDF(buffer: Buffer): Promise<string> {
@@ -81,11 +82,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Upload file to S3 (if configured)
+    let s3Key: string | undefined;
+    let s3Url: string | undefined;
+
+    if (validateS3Config()) {
+      try {
+        const s3Result = await uploadFileToS3(fileBuffer, fileName, file.type);
+        s3Key = s3Result.key;
+        s3Url = s3Result.url;
+      } catch (s3Error) {
+        console.error('S3 upload error:', s3Error);
+        // Continue without S3 - don't fail the entire request
+      }
+    }
+
     return NextResponse.json({
       success: true,
       fileName: fileName,
       fileType: fileExtension,
       extractedText: extractedText,
+      s3Key,
+      s3Url,
     });
 
   } catch (error) {
