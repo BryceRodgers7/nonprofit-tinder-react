@@ -149,21 +149,20 @@ function ProfilePageContent() {
 
     try {
       // Debug: Log what we're about to save
-      console.log('Saving to profile:', {
+      console.log('Saving file reference to profile:', {
         fileName: uploadedFileData.fileName,
         s3Key: uploadedFileData.s3Key,
         s3Url: uploadedFileData.s3Url,
       });
 
-      // Save file info to profile (file already uploaded to S3 in handleFileSelect)
-      const response = await fetch('/api/profile', {
+      // Save ONLY file reference (fileName, s3Key, s3Url) - no other profile fields
+      const response = await fetch('/api/profile/file', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
-          ...profile,
           fileName: uploadedFileData.fileName,
           s3Key: uploadedFileData.s3Key,
           s3Url: uploadedFileData.s3Url,
@@ -176,8 +175,18 @@ function ProfilePageContent() {
       }
 
       const result = await response.json();
-      console.log('Profile saved, result:', result.profile);
-      setProfile(result.profile);
+      console.log('File reference saved, result:', result.profile);
+      
+      // Update only the file-related fields in the profile state
+      setProfile(prev => {
+        if (!prev) return result.profile;
+        return {
+          ...prev,
+          fileName: result.profile.fileName,
+          s3Key: result.profile.s3Key,
+          s3Url: result.profile.s3Url,
+        };
+      });
       
       // Mark file as saved and show success message
       setFileSavedToProfile(true);
