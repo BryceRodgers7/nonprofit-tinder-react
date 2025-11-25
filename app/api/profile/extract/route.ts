@@ -3,8 +3,13 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
-import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/middleware';
+import { 
+  PRIMARY_CAUSE_AREAS, 
+  POPULATIONS, 
+  GEOGRAPHIC_FOCUS_OPTIONS, 
+  LEGAL_DESIGNATION_OPTIONS 
+} from '@/lib/profile-constants';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -52,10 +57,12 @@ export async function POST(request: NextRequest) {
 - locationServed: Geographic location or area served by the organization
 - biggestAccomplishment: Their biggest or most notable accomplishment
 - oneSentenceSummary: What they do summarized in one sentence
-- legalDesignation: Legal designation (e.g., 501(c)(3), charitable organization, etc.)
-- primaryCauseAreas: Array of primary cause areas (e.g., ["Education", "Health", "Environment"])
-- populations: Array of populations served (e.g., ["Children", "Veterans", "Low-income families"])
-- geographicalFocus: Geographical focus (e.g., "Local", "National", "International", or specific regions)
+- legalDesignation: Select one legal designation from this EXACT list: ${LEGAL_DESIGNATION_OPTIONS.join(', ')}. Match the text as closely as possible. Common variations: "501c3" or "501(c)3" should map to "501(c)(3) – Public Charity" or "501(c)(3) – Private Foundation" based on context.
+- primaryCauseAreas: Array of primary cause areas. Select one or more from this EXACT list: ${PRIMARY_CAUSE_AREAS.join(', ')}. Match the text as closely as possible. Use "Other" if none match.
+- populations: Array of populations served. Select one or more from this EXACT list: ${POPULATIONS.join(', ')}. Match the text as closely as possible. Use "Other" if none match.
+- geographicalFocus: Select one geographical focus from this EXACT list: ${GEOGRAPHIC_FOCUS_OPTIONS.join(', ')}. Match the text as closely as possible.
+
+IMPORTANT: For legalDesignation, primaryCauseAreas, populations, and geographicalFocus, you MUST use values from the provided lists above. This ensures the extracted data matches the dropdown options in the form.
 
 If any field is not found in the text, set it to null (except primaryCauseAreas and populations which should be empty arrays).
 Be thorough and extract as much relevant information as possible from the document.
@@ -81,47 +88,23 @@ Return ONLY valid JSON, no additional text.`
 
     const extractedData = JSON.parse(responseContent);
 
-    // Upsert profile - create or update the user's profile
-    const profile = await prisma.profile.upsert({
-      where: { userId: user.userId },
-      update: {
-        fileName: fileName || null,
-        s3Key: s3Key || null,
-        s3Url: s3Url || null,
-        organizationName: extractedData.organizationName || null,
-        ein: extractedData.ein || null,
-        missionStatement: extractedData.missionStatement || null,
-        yearFounded: extractedData.yearFounded || null,
-        locationServed: extractedData.locationServed || null,
-        biggestAccomplishment: extractedData.biggestAccomplishment || null,
-        oneSentenceSummary: extractedData.oneSentenceSummary || null,
-        legalDesignation: extractedData.legalDesignation || null,
-        primaryCauseAreas: extractedData.primaryCauseAreas || [],
-        populations: extractedData.populations || [],
-        geographicalFocus: extractedData.geographicalFocus || null,
-      },
-      create: {
-        userId: user.userId,
-        fileName: fileName || null,
-        s3Key: s3Key || null,
-        s3Url: s3Url || null,
-        organizationName: extractedData.organizationName || null,
-        ein: extractedData.ein || null,
-        missionStatement: extractedData.missionStatement || null,
-        yearFounded: extractedData.yearFounded || null,
-        locationServed: extractedData.locationServed || null,
-        biggestAccomplishment: extractedData.biggestAccomplishment || null,
-        oneSentenceSummary: extractedData.oneSentenceSummary || null,
-        legalDesignation: extractedData.legalDesignation || null,
-        primaryCauseAreas: extractedData.primaryCauseAreas || [],
-        populations: extractedData.populations || [],
-        geographicalFocus: extractedData.geographicalFocus || null,
-      },
-    });
-
+    // Return extracted data WITHOUT saving to database
+    // The user will review and manually click "Save Profile" to persist changes
     return NextResponse.json({
       success: true,
-      profile: profile,
+      extractedData: {
+        organizationName: extractedData.organizationName || null,
+        ein: extractedData.ein || null,
+        missionStatement: extractedData.missionStatement || null,
+        yearFounded: extractedData.yearFounded || null,
+        locationServed: extractedData.locationServed || null,
+        biggestAccomplishment: extractedData.biggestAccomplishment || null,
+        oneSentenceSummary: extractedData.oneSentenceSummary || null,
+        legalDesignation: extractedData.legalDesignation || null,
+        primaryCauseAreas: extractedData.primaryCauseAreas || [],
+        populations: extractedData.populations || [],
+        geographicalFocus: extractedData.geographicalFocus || null,
+      },
     });
 
   } catch (error) {

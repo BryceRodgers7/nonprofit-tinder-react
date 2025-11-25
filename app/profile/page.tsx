@@ -3,7 +3,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import ProtectedRoute from './components/ProtectedRoute';
 import FileUpload from './components/FileUpload';
@@ -12,6 +12,7 @@ import LoadingSpinner from './components/LoadingSpinner';
 
 function ProfilePageContent() {
   const { user, token, logout } = useAuth();
+  const hasLoadedProfile = useRef(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
   const [isSavingFile, setIsSavingFile] = useState(false);
@@ -31,9 +32,10 @@ function ProfilePageContent() {
     s3Configured?: boolean;
   } | null>(null);
 
-  // Load profile on mount
+  // Load profile on mount - only once
   useEffect(() => {
-    if (token) {
+    if (token && !hasLoadedProfile.current) {
+      hasLoadedProfile.current = true;
       fetchProfile();
     }
   }, [token]);
@@ -223,7 +225,12 @@ function ProfilePageContent() {
       }
 
       setProcessingStatus('');
-      setProfile(extractData.profile);
+      
+      // Merge extracted data with existing profile (don't overwrite saved data)
+      setProfile(prev => ({
+        ...prev,
+        ...extractData.extractedData,
+      }));
     } catch (error) {
       console.error('Error extracting data:', error);
       setError(error instanceof Error ? error.message : 'An error occurred');
@@ -395,11 +402,10 @@ function ProfilePageContent() {
           <h3 className="text-lg font-semibold text-blue-900 mb-2">How to Use</h3>
           <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
             <li>Upload a proposal document (PDF, DOCX, or TXT)</li>
-            <li>Click "Save to Profile" to save the file reference</li>
-            <li>Click "Extract Data with AI" to automatically fill the form fields below</li>
-            <li>Or manually fill out the form fields</li>
-            <li>Review and edit any extracted information</li>
-            <li>Click "Save Profile" at the bottom to save all changes</li>
+            <li>Click "Save to Profile" to save the file reference to S3</li>
+            <li>Click "Extract Data with AI" to auto-populate the form fields below (does NOT save yet)</li>
+            <li>Review and edit the extracted information in the form</li>
+            <li>Click "Save Profile" at the bottom to save all your changes to the database</li>
           </ol>
         </div>
 
