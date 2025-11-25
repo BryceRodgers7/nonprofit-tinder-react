@@ -20,6 +20,9 @@ model AppUser {
   // One-to-one relationship with Profile
   profile   Profile?
   
+  // One-to-many relationship with Likes
+  likes     Like[]
+  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
@@ -49,9 +52,25 @@ model Profile {
   populations           String[] @default([])
   geographicalFocus     String?
   
+  // One-to-many relationship with Likes
+  likes     Like[]
+  
   // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
   @@map("profiles")
+}
+
+model Like {
+  id        String   @id @default(uuid())
+  userId    String   // User who performed the action
+  user      AppUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  profileId String   // Profile that was liked/passed
+  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  action    String   // "like" or "pass"
+  createdAt DateTime @default(now())
+  
+  @@unique([userId, profileId]) // One action per user-profile pair
+  @@map("likes")
 }

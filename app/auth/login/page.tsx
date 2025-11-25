@@ -41,8 +41,8 @@ export default function LoginPage() {
       // Update auth context with token and user info
       login(data.token, data.user);
 
-      // Redirect to profile page
-      router.push('/profile');
+      // Redirect to home page
+      router.push('/home');
     } catch (error) {
       setError(error instanceof Error ? error.message : 'An error occurred');
     } finally {

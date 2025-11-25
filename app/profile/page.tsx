@@ -9,9 +9,10 @@ import ProtectedRoute from './components/ProtectedRoute';
 import FileUpload from './components/FileUpload';
 import ProfileForm, { ProfileData } from './components/ProfileForm';
 import LoadingSpinner from './components/LoadingSpinner';
+import NavBar from '@/app/components/NavBar';
 
 function ProfilePageContent() {
-  const { user, token, logout } = useAuth();
+  const { token } = useAuth();
   const hasLoadedProfile = useRef(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
@@ -277,26 +278,16 @@ function ProfilePageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-5xl mx-auto">
-        {/* Header */}
+    <div className="min-h-screen bg-gray-50">
+      <NavBar />
+      
+      <div className="py-8 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-5xl mx-auto">
+          {/* Header */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                Non-Profit Organization Profile
-              </h1>
-              <p className="text-sm text-gray-600 mt-1">
-                Welcome, {user?.name}
-              </p>
-            </div>
-            <button
-              onClick={logout}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              Log out
-            </button>
-          </div>
+          <h1 className="text-3xl font-bold text-gray-900">
+            Non-Profit Organization Profile
+          </h1>
         </div>
 
         {/* File Upload Section (Optional) */}
@@ -427,6 +418,7 @@ function ProfilePageContent() {
             initialData={profile}
             onSave={handleSave}
           />
+        </div>
         </div>
       </div>
     </div>
