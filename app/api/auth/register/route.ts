@@ -8,12 +8,21 @@ import { hashPassword, generateToken } from '@/lib/auth';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, password, name } = body;
+    const { username, email, password, name } = body;
 
     // Validate inputs
-    if (!email || !password || !name) {
+    if (!username || !email || !password || !name) {
       return NextResponse.json(
-        { error: 'Email, password, and name are required' },
+        { error: 'Username, email, password, and name are required' },
+        { status: 400 }
+      );
+    }
+
+    // Validate username format (alphanumeric, underscore, hyphen, 3-20 chars)
+    const usernameRegex = /^[a-zA-Z0-9_-]{3,20}$/;
+    if (!usernameRegex.test(username)) {
+      return NextResponse.json(
+        { error: 'Username must be 3-20 characters and contain only letters, numbers, underscores, or hyphens' },
         { status: 400 }
       );
     }
@@ -35,12 +44,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if user already exists
-    const existingUser = await prisma.appUser.findUnique({
+    // Check if username already exists
+    const existingUsername = await prisma.appUser.findUnique({
+      where: { username: username.toLowerCase() },
+    });
+
+    if (existingUsername) {
+      return NextResponse.json(
+        { error: 'Username is already taken' },
+        { status: 400 }
+      );
+    }
+
+    // Check if email already exists
+    const existingEmail = await prisma.appUser.findUnique({
       where: { email: email.toLowerCase() },
     });
 
-    if (existingUser) {
+    if (existingEmail) {
       return NextResponse.json(
         { error: 'User with this email already exists' },
         { status: 400 }
@@ -53,6 +74,7 @@ export async function POST(request: NextRequest) {
     // Create user
     const user = await prisma.appUser.create({
       data: {
+        username: username.toLowerCase(),
         email: email.toLowerCase(),
         password: hashedPassword,
         name,
@@ -70,6 +92,7 @@ export async function POST(request: NextRequest) {
       success: true,
       user: {
         id: user.id,
+        username: user.username,
         email: user.email,
         name: user.name,
       },

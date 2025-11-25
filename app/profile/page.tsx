@@ -18,13 +18,17 @@ function ProfilePageContent() {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [processingStatus, setProcessingStatus] = useState<string>('');
+  const [fileSavedToProfile, setFileSavedToProfile] = useState(false);
   const [uploadedFileData, setUploadedFileData] = useState<{
     file: File;
     fileName: string;
-    s3Key: string;
-    s3Url: string;
+    s3Key?: string;
+    s3Url?: string;
     extractedText: string;
+    s3Error?: string;
+    s3Configured?: boolean;
   } | null>(null);
 
   // Load profile on mount
@@ -74,6 +78,7 @@ function ProfilePageContent() {
   const handleFileSelect = async (file: File) => {
     setError(null);
     setIsUploading(true);
+    setFileSavedToProfile(false);
     setProcessingStatus('Uploading and extracting text from proposal...');
 
     try {
@@ -92,6 +97,20 @@ function ProfilePageContent() {
         throw new Error(uploadData.error || 'Failed to upload file');
       }
 
+      // Debug: Log the upload response
+      console.log('Upload response:', uploadData);
+      console.log('S3 Key:', uploadData.s3Key);
+      console.log('S3 URL:', uploadData.s3Url);
+      console.log('S3 Error:', uploadData.s3Error);
+      console.log('S3 Configured:', uploadData.s3Configured);
+
+      // Check for S3 issues
+      if (uploadData.s3Error || !uploadData.s3Key || !uploadData.s3Url) {
+        const s3Message = uploadData.s3Error || 'S3 upload failed - no key/url returned';
+        console.error('S3 Issue:', s3Message);
+        setError(`File uploaded but S3 storage failed: ${s3Message}`);
+      }
+
       // Store the uploaded file data for later saving
       setUploadedFileData({
         file,
@@ -99,6 +118,8 @@ function ProfilePageContent() {
         s3Key: uploadData.s3Key,
         s3Url: uploadData.s3Url,
         extractedText: uploadData.extractedText,
+        s3Error: uploadData.s3Error,
+        s3Configured: uploadData.s3Configured,
       });
 
       setProcessingStatus('');
@@ -114,11 +135,25 @@ function ProfilePageContent() {
   const handleSaveFileToProfile = async () => {
     if (!uploadedFileData) return;
 
+    // Validate S3 data before saving
+    if (!uploadedFileData.s3Key || !uploadedFileData.s3Url) {
+      setError('Cannot save to profile: File was not uploaded to S3 successfully. Please check S3 configuration.');
+      return;
+    }
+
     setIsSavingFile(true);
     setError(null);
+    setSuccessMessage(null);
 
     try {
-      // Save file info to profile
+      // Debug: Log what we're about to save
+      console.log('Saving to profile:', {
+        fileName: uploadedFileData.fileName,
+        s3Key: uploadedFileData.s3Key,
+        s3Url: uploadedFileData.s3Url,
+      });
+
+      // Save file info to profile (file already uploaded to S3 in handleFileSelect)
       const response = await fetch('/api/profile', {
         method: 'PUT',
         headers: {
@@ -139,10 +174,17 @@ function ProfilePageContent() {
       }
 
       const result = await response.json();
+      console.log('Profile saved, result:', result.profile);
       setProfile(result.profile);
       
-      // Clear uploaded file data after saving
-      setUploadedFileData(null);
+      // Mark file as saved and show success message
+      setFileSavedToProfile(true);
+      setSuccessMessage(`File "${uploadedFileData.fileName}" saved successfully to S3 and database!`);
+      
+      // Don't clear uploadedFileData - keep it for AI extraction
+      
+      // Clear success message after 5 seconds
+      setTimeout(() => setSuccessMessage(null), 5000);
     } catch (error) {
       console.error('Error saving file:', error);
       setError(error instanceof Error ? error.message : 'An error occurred');
@@ -280,17 +322,40 @@ function ProfilePageContent() {
           {/* Show uploaded file info and action buttons */}
           {uploadedFileData && (
             <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-md">
-              <p className="text-sm text-blue-800 mb-3">
+              <p className="text-sm text-blue-800 mb-2">
                 <strong>Uploaded:</strong> {uploadedFileData.fileName}
               </p>
-              <div className="flex gap-3">
-                <button
-                  onClick={handleSaveFileToProfile}
-                  disabled={isSavingFile}
-                  className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isSavingFile ? 'Saving...' : 'Save to Profile'}
-                </button>
+              
+              {/* S3 Status Info */}
+              {uploadedFileData.s3Error && (
+                <div className="mb-3 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800">
+                  <strong>⚠️ S3 Warning:</strong> {uploadedFileData.s3Error}
+                </div>
+              )}
+              
+              {uploadedFileData.s3Key && uploadedFileData.s3Url && (
+                <div className="mb-3 text-xs text-green-700">
+                  ✓ Successfully uploaded to S3
+                </div>
+              )}
+              
+              <div className="flex gap-3 items-center">
+                {!fileSavedToProfile ? (
+                  <button
+                    onClick={handleSaveFileToProfile}
+                    disabled={isSavingFile || !uploadedFileData.s3Key || !uploadedFileData.s3Url}
+                    className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    title={!uploadedFileData.s3Key || !uploadedFileData.s3Url ? 'S3 upload required to save' : ''}
+                  >
+                    {isSavingFile ? 'Saving...' : 'Save to Profile'}
+                  </button>
+                ) : (
+                  successMessage && (
+                    <div className="px-4 py-2 bg-green-100 text-green-800 text-sm font-medium rounded-md">
+                      ✓ Saved to profile
+                    </div>
+                  )
+                )}
                 <button
                   onClick={handleExtractWithAI}
                   disabled={isExtracting}
@@ -307,6 +372,13 @@ function ProfilePageContent() {
             <div className="mt-4 flex items-center gap-3 p-4 bg-blue-50 rounded-md">
               <LoadingSpinner />
               <span className="text-sm text-blue-800">{processingStatus}</span>
+            </div>
+          )}
+
+          {/* Success Message */}
+          {successMessage && (
+            <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-md">
+              <p className="text-sm text-green-800 font-medium">{successMessage}</p>
             </div>
           )}
 

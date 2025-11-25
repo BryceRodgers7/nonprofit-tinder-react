@@ -5,15 +5,20 @@ import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } fro
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 // Initialize S3 client
+console.log('[S3 Init] Initializing S3 client with region:', process.env.AWS_DEFAULT_REGION || 'us-east-1');
+console.log('[S3 Init] Has Access Key:', !!process.env.AWS_ACCESS_KEY_ID);
+console.log('[S3 Init] Has Secret Key:', !!process.env.AWS_SECRET_ACCESS_KEY);
+console.log('[S3 Init] Bucket Name:', process.env.AWS_BUCKET);
+
 const s3Client = new S3Client({
-  region: process.env.AWS_REGION || 'us-east-1',
+  region: process.env.AWS_DEFAULT_REGION || 'us-east-1',
   credentials: {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
   },
 });
 
-const BUCKET_NAME = process.env.AWS_S3_BUCKET_NAME || '';
+const AWS_BUCKET = process.env.AWS_BUCKET || '';
 
 /**
  * Upload a file to S3
@@ -27,8 +32,15 @@ export async function uploadFileToS3(
   key: string,
   contentType: string
 ): Promise<{ key: string; url: string }> {
-  if (!BUCKET_NAME) {
-    throw new Error('AWS_S3_BUCKET_NAME is not configured');
+  console.log('[S3] Starting upload process...');
+  console.log('[S3] Bucket:', AWS_BUCKET);
+  console.log('[S3] Region:', process.env.AWS_DEFAULT_REGION);
+  console.log('[S3] Original key:', key);
+  console.log('[S3] Content type:', contentType);
+  console.log('[S3] File size:', file.length, 'bytes');
+
+  if (!AWS_BUCKET) {
+    throw new Error('AWS_S3_AWS_BUCKET is not configured');
   }
 
   // Sanitize key: remove spaces and special characters
@@ -36,17 +48,27 @@ export async function uploadFileToS3(
   const timestamp = Date.now();
   const uniqueKey = `proposals/${timestamp}_${sanitizedKey}`;
 
+  console.log('[S3] Sanitized unique key:', uniqueKey);
+
   const command = new PutObjectCommand({
-    Bucket: BUCKET_NAME,
+    Bucket: AWS_BUCKET,
     Key: uniqueKey,
     Body: file,
     ContentType: contentType,
   });
 
-  await s3Client.send(command);
+  try {
+    console.log('[S3] Sending PutObjectCommand...');
+    const result = await s3Client.send(command);
+    console.log('[S3] Upload successful! ETag:', result.ETag);
+  } catch (uploadError) {
+    console.error('[S3] Upload failed:', uploadError);
+    throw uploadError;
+  }
 
   // Generate URL (public bucket) or signed URL (private bucket)
-  const url = `https://${BUCKET_NAME}.s3.${process.env.AWS_REGION || 'us-east-1'}.amazonaws.com/${uniqueKey}`;
+  const url = `https://${AWS_BUCKET}.s3.${process.env.AWS_DEFAULT_REGION || 'us-east-1'}.amazonaws.com/${uniqueKey}`;
+  console.log('[S3] Generated URL:', url);
 
   return {
     key: uniqueKey,
@@ -61,12 +83,12 @@ export async function uploadFileToS3(
  * @returns Signed URL
  */
 export async function getSignedS3Url(key: string, expiresIn: number = 3600): Promise<string> {
-  if (!BUCKET_NAME) {
-    throw new Error('AWS_S3_BUCKET_NAME is not configured');
+  if (!AWS_BUCKET) {
+    throw new Error('AWS_S3_AWS_BUCKET is not configured');
   }
 
   const command = new GetObjectCommand({
-    Bucket: BUCKET_NAME,
+    Bucket: AWS_BUCKET,
     Key: key,
   });
 
@@ -79,12 +101,12 @@ export async function getSignedS3Url(key: string, expiresIn: number = 3600): Pro
  * @param key - S3 object key
  */
 export async function deleteFileFromS3(key: string): Promise<void> {
-  if (!BUCKET_NAME) {
-    throw new Error('AWS_S3_BUCKET_NAME is not configured');
+  if (!AWS_BUCKET) {
+    throw new Error('AWS_S3_AWS_BUCKET is not configured');
   }
 
   const command = new DeleteObjectCommand({
-    Bucket: BUCKET_NAME,
+    Bucket: AWS_BUCKET,
     Key: key,
   });
 
@@ -98,8 +120,8 @@ export function validateS3Config(): boolean {
   return !!(
     process.env.AWS_ACCESS_KEY_ID &&
     process.env.AWS_SECRET_ACCESS_KEY &&
-    process.env.AWS_REGION &&
-    process.env.AWS_S3_BUCKET_NAME
+    process.env.AWS_DEFAULT_REGION &&
+    process.env.AWS_BUCKET
   );
 }
 

@@ -85,16 +85,31 @@ export async function POST(request: NextRequest) {
     // Upload file to S3 (if configured)
     let s3Key: string | undefined;
     let s3Url: string | undefined;
+    let s3Error: string | undefined;
+
+    console.log('S3 Configuration Status:', {
+      isConfigured: validateS3Config(),
+      hasAccessKey: !!process.env.AWS_ACCESS_KEY_ID,
+      hasSecretKey: !!process.env.AWS_SECRET_ACCESS_KEY,
+      hasRegion: !!process.env.AWS_REGION,
+      hasBucket: !!process.env.AWS_S3_BUCKET_NAME,
+    });
 
     if (validateS3Config()) {
       try {
+        console.log('Attempting S3 upload for file:', fileName);
         const s3Result = await uploadFileToS3(fileBuffer, fileName, file.type);
         s3Key = s3Result.key;
         s3Url = s3Result.url;
-      } catch (s3Error) {
-        console.error('S3 upload error:', s3Error);
+        console.log('S3 upload successful:', { s3Key, s3Url });
+      } catch (s3UploadError) {
+        console.error('S3 upload error:', s3UploadError);
+        s3Error = s3UploadError instanceof Error ? s3UploadError.message : 'Unknown S3 error';
         // Continue without S3 - don't fail the entire request
       }
+    } else {
+      console.warn('S3 is not configured. File will not be stored in S3.');
+      s3Error = 'S3 is not configured. Check AWS environment variables.';
     }
 
     return NextResponse.json({
@@ -104,6 +119,8 @@ export async function POST(request: NextRequest) {
       extractedText: extractedText,
       s3Key,
       s3Url,
+      s3Error,
+      s3Configured: validateS3Config(),
     });
 
   } catch (error) {
