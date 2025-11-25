@@ -4,8 +4,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import ArrayInput from './ArrayInput';
+import MultiSelect from './MultiSelect';
 import LoadingSpinner from './LoadingSpinner';
+import { 
+  PRIMARY_CAUSE_AREAS, 
+  POPULATIONS, 
+  GEOGRAPHIC_FOCUS_OPTIONS, 
+  LEGAL_DESIGNATION_OPTIONS 
+} from '@/lib/profile-constants';
 
 export interface ProfileData {
   id?: string;
@@ -29,10 +35,9 @@ export interface ProfileData {
 interface ProfileFormProps {
   initialData: ProfileData | null;
   onSave: (data: ProfileData) => Promise<void>;
-  showUploadInfo?: boolean;
 }
 
-export default function ProfileForm({ initialData, onSave, showUploadInfo = false }: ProfileFormProps) {
+export default function ProfileForm({ initialData, onSave }: ProfileFormProps) {
   const [formData, setFormData] = useState<ProfileData>({
     organizationName: null,
     ein: null,
@@ -79,25 +84,6 @@ export default function ProfileForm({ initialData, onSave, showUploadInfo = fals
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Uploaded File Info */}
-      {showUploadInfo && formData.fileName && (
-        <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
-          <p className="text-sm text-blue-800">
-            <strong>Uploaded file:</strong> {formData.fileName}
-          </p>
-          {formData.s3Url && (
-            <a 
-              href={formData.s3Url} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-sm text-blue-600 hover:text-blue-800 underline"
-            >
-              View file
-            </a>
-          )}
-        </div>
-      )}
-
       {/* Basic Information Section */}
       <div>
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Basic Information</h3>
@@ -139,13 +125,18 @@ export default function ProfileForm({ initialData, onSave, showUploadInfo = fals
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Legal Designation
             </label>
-            <input
-              type="text"
+            <select
               value={formData.legalDesignation || ''}
               onChange={(e) => handleChange('legalDesignation', e.target.value)}
-              placeholder="e.g., 501(c)(3)"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            >
+              <option value="">Select a designation</option>
+              {LEGAL_DESIGNATION_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
       </div>
@@ -201,13 +192,18 @@ export default function ProfileForm({ initialData, onSave, showUploadInfo = fals
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Geographical Focus
             </label>
-            <input
-              type="text"
+            <select
               value={formData.geographicalFocus || ''}
               onChange={(e) => handleChange('geographicalFocus', e.target.value)}
-              placeholder="e.g., Local, National, International"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            >
+              <option value="">Select geographical focus</option>
+              {GEOGRAPHIC_FOCUS_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
       </div>
@@ -216,17 +212,19 @@ export default function ProfileForm({ initialData, onSave, showUploadInfo = fals
       <div>
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Focus Areas</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <ArrayInput
+          <MultiSelect
             values={formData.primaryCauseAreas}
             onChange={(values) => handleChange('primaryCauseAreas', values)}
-            placeholder="Type a cause area and press Enter"
+            options={PRIMARY_CAUSE_AREAS}
             label="Primary Cause Areas"
+            placeholder="Select cause areas..."
           />
-          <ArrayInput
+          <MultiSelect
             values={formData.populations}
             onChange={(values) => handleChange('populations', values)}
-            placeholder="Type a population and press Enter"
+            options={POPULATIONS}
             label="Populations Served"
+            placeholder="Select populations..."
           />
         </div>
       </div>
