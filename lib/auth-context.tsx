@@ -15,7 +15,6 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
-  token: string | null; // Kept for backwards compatibility, but always null (token is in HttpOnly cookie)
   login: (user: User) => void;
   logout: () => void;
   isLoading: boolean;
@@ -79,7 +78,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return (
     <AuthContext.Provider value={{ 
       user, 
-      token: null, // Token is in HttpOnly cookie, not accessible to JS
       login, 
       logout, 
       isLoading,
