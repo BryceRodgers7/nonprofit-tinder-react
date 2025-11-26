@@ -1,5 +1,6 @@
 // FRONTEND: Auth context
 // React context for managing user authentication state
+// Uses HttpOnly cookies for token storage (read via /api/auth/me)
 
 'use client';
 
@@ -14,50 +15,76 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
-  token: string | null;
-  login: (token: string, user: User) => void;
+  token: string | null; // Kept for backwards compatibility, but always null (token is in HttpOnly cookie)
+  login: (user: User) => void;
   logout: () => void;
   isLoading: boolean;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
+  // Check auth status on mount by calling /api/auth/me
   useEffect(() => {
-    // Check for stored token on mount
-    const storedToken = localStorage.getItem('token');
-    const storedUser = localStorage.getItem('user');
-
-    if (storedToken && storedUser) {
-      setToken(storedToken);
-      setUser(JSON.parse(storedUser));
-    }
-
-    setIsLoading(false);
+    refreshUser();
   }, []);
 
-  const login = (newToken: string, newUser: User) => {
-    localStorage.setItem('token', newToken);
-    localStorage.setItem('user', JSON.stringify(newUser));
-    setToken(newToken);
+  const refreshUser = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/auth/me', {
+        credentials: 'include', // Important: include cookies in request
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setUser(data.user);
+      } else {
+        setUser(null);
+      }
+    } catch (error) {
+      console.error('Failed to fetch user:', error);
+      setUser(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const login = (newUser: User) => {
+    // Token is already set in HttpOnly cookie by the server
+    // Just update the user state
     setUser(newUser);
   };
 
-  const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setToken(null);
+  const logout = async () => {
+    try {
+      // Call logout API to clear the cookie
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+    
     setUser(null);
     router.push('/auth/login');
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, isLoading }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      token: null, // Token is in HttpOnly cookie, not accessible to JS
+      login, 
+      logout, 
+      isLoading,
+      refreshUser 
+    }}>
       {children}
     </AuthContext.Provider>
   );

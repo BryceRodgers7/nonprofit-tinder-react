@@ -87,8 +87,8 @@ export async function POST(request: NextRequest) {
       email: user.email,
     });
 
-    // Return user info and token (exclude password)
-    return NextResponse.json({
+    // Create response with user info (exclude password and token from body)
+    const response = NextResponse.json({
       success: true,
       user: {
         id: user.id,
@@ -96,8 +96,18 @@ export async function POST(request: NextRequest) {
         email: user.email,
         name: user.name,
       },
-      token,
     });
+
+    // Set HttpOnly cookie with the token
+    response.cookies.set('auth-token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      path: '/',
+    });
+
+    return response;
 
   } catch (error) {
     console.error('Error in register route:', error);

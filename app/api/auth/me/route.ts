@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
       where: { id: tokenUser.userId },
       select: {
         id: true,
+        username: true,
         email: true,
         name: true,
         createdAt: true,

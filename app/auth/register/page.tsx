@@ -45,6 +45,7 @@ export default function RegisterPage() {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // Important: include cookies
         body: JSON.stringify({
           username: formData.username,
           name: formData.name,
@@ -59,8 +60,8 @@ export default function RegisterPage() {
         throw new Error(data.error || 'Registration failed');
       }
 
-      // Update auth context with token and user info
-      login(data.token, data.user);
+      // Update auth context with user info (token is in HttpOnly cookie)
+      login(data.user);
 
       // Redirect to profile page
       router.push('/profile');

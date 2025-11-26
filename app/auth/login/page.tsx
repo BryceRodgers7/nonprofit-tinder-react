@@ -29,6 +29,7 @@ export default function LoginPage() {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // Important: include cookies
         body: JSON.stringify(formData),
       });
 
@@ -38,8 +39,8 @@ export default function LoginPage() {
         throw new Error(data.error || 'Login failed');
       }
 
-      // Update auth context with token and user info
-      login(data.token, data.user);
+      // Update auth context with user info (token is in HttpOnly cookie)
+      login(data.user);
 
       // Redirect to home page
       router.push('/home');

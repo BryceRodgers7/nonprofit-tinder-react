@@ -10,11 +10,18 @@ export interface AuthenticatedRequest extends NextRequest {
 
 /**
  * Verify JWT token from request and return user info
+ * Checks cookies first, then Authorization header for backwards compatibility
  * Returns null if token is invalid or missing
  */
 export function getUserFromRequest(request: NextRequest): JWTPayload | null {
-  const authHeader = request.headers.get('authorization');
-  const token = extractTokenFromHeader(authHeader);
+  // Try to get token from cookie first
+  let token = request.cookies.get('auth-token')?.value;
+  
+  // Fall back to Authorization header if cookie not found
+  if (!token) {
+    const authHeader = request.headers.get('authorization');
+    token = extractTokenFromHeader(authHeader);
+  }
   
   if (!token) {
     return null;
