@@ -49,7 +49,7 @@ export function verifyToken(token: string): JWTPayload | null {
 /**
  * Extract token from Authorization header
  */
-export function extractTokenFromHeader(authHeader: string | null): string | null {
+export function extractTokenFromHeader(authHeader: string | null | undefined): string | null {
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return null;
   }

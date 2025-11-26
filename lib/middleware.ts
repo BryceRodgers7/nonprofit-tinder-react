@@ -15,7 +15,7 @@ export interface AuthenticatedRequest extends NextRequest {
  */
 export function getUserFromRequest(request: NextRequest): JWTPayload | null {
   // Try to get token from cookie first
-  let token = request.cookies.get('auth-token')?.value;
+  let token: string | null | undefined = request.cookies.get('auth-token')?.value;
   
   // Fall back to Authorization header if cookie not found
   if (!token) {
