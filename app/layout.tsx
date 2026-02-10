@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Non-Profit Profile Builder",
-  description: "Create and manage your non-profit organization profile",
+  title: "Coming Soon - Givio",
+  description: "We're building something amazing. Stay tuned for an incredible platform connecting nonprofits with donors.",
 };
 
 export default function RootLayout({
