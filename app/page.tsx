@@ -63,32 +63,7 @@ export default function ComingSoon() {
           </p>
         </div>
 
-        {/* Features Preview */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-3xl mx-auto mb-12">
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-            <div className="text-5xl mb-4">💝</div>
-            <h3 className="text-white font-semibold text-lg mb-2">Smart Matching</h3>
-            <p className="text-white/80 text-sm">
-              Connect nonprofits with the right donors
-            </p>
-          </div>
-          
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-            <div className="text-5xl mb-4">🤖</div>
-            <h3 className="text-white font-semibold text-lg mb-2">AI-Powered</h3>
-            <p className="text-white/80 text-sm">
-              Intelligent profile creation and analysis
-            </p>
-          </div>
-          
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-            <div className="text-5xl mb-4">⚡</div>
-            <h3 className="text-white font-semibold text-lg mb-2">Fast & Easy</h3>
-            <p className="text-white/80 text-sm">
-              Streamlined experience for everyone
-            </p>
-          </div>
-        </div>
+        
 
         {/* Call to Action */}
         <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 max-w-md mx-auto border border-white/20">
