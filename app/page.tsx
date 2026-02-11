@@ -59,7 +59,7 @@ export default function ComingSoon() {
           
           <p className="text-lg text-white/80 max-w-2xl mx-auto mb-12">
             Our platform is currently under development. We're working hard to bring you 
-            an incredible experience that will transform how nonprofits connect with donors.
+            an incredible experience that will transform how donors connect with nonprofits.
           </p>
         </div>
 
