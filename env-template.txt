@@ -20,7 +20,7 @@ AWS_REGION="us-east-1"
 AWS_S3_BUCKET_NAME="your-bucket-name"
 
 # Email Configuration (for coming soon page signups)
-# Gmail SMTP settings for sending notification emails
+# Gmail SMTP settings for sending internal notification emails
 GMAIL_SMTP_HOST="smtp.gmail.com"
 GMAIL_SMTP_PORT="587"
 GMAIL_SMTP_USER="your-gmail@gmail.com"
@@ -30,3 +30,7 @@ GMAIL_EMAIL_FROM="your-gmail@gmail.com"
 # Email address where signup notifications are sent
 GIVIO_EMAIL_ADDR_INFO="info@givio-gives.com"
 
+# Resend API key for sending confirmation emails to visitors
+# Get this from https://resend.com/api-keys
+RESEND_API_KEY="re_..."
+RESEND_EMAIL_FROM="no-reply@mailing.giviogives.com"
